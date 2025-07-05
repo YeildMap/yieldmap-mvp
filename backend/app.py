@@ -1,15 +1,28 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
-from routes.sample_route import sample_route
+from flask import Flask, request, render_template, jsonify
+from estimator.ai_estimator import estimate_units
+from estimator.cornwall_rules import get_density_rules
+from ai_estimator import estimate_units
+from cornwall_rules import get_density_rules
+import json
 
 app = Flask(__name__)
-CORS(app)
 
-app.register_blueprint(sample_route)
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-@app.route('/api/health')
-def health():
-    return jsonify({'status': 'ok'})
+@app.route("/upload", methods=["POST"])
+def upload():
+    data = request.get_json()
+    polygon = data.get("geometry")
+    land_area_m2 = data.get("area_m2")
 
-if __name__ == '__main__':
+    if not polygon or not land_area_m2:
+        return jsonify({"error": "Missing polygon or area"}), 400
+
+    result = estimate_units(land_area_m2)
+    return jsonify(result)
+
+if __name__ == "__main__":
+    app.run(debug=True)
     app.run(debug=True)
